@@ -1,54 +1,47 @@
-const getState = ({ getStore, getActions, setStore }) => {
+import {
+	loginWhitEmailAndPassword,
+	registerUser,
+  } from "../../services/enpoints";
+  
+  const getState = ({ getStore, getActions, setStore }) => {
 	return {
-		store: {
-			message: null,
-			demo: [
-				{
-					title: "FIRST",
-					background: "white",
-					initial: "white"
-				},
-				{
-					title: "SECOND",
-					background: "white",
-					initial: "white"
-				}
-			]
+	  store: {
+		user: {},
+		token: null,
+	  },
+	  actions: {
+		saveUser: (user, token) => {
+		  setStore({ user: user, token: token });
 		},
-		actions: {
-			// Use getActions to call a function within a fuction
-			exampleFunction: () => {
-				getActions().changeColor(0, "green");
-			},
-
-			getMessage: async () => {
-				try{
-					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
-					// don't forget to return something, that is how the async resolves
-					return data;
-				}catch(error){
-					console.log("Error loading message from backend", error)
-				}
-			},
-			changeColor: (index, color) => {
-				//get the store
-				const store = getStore();
-
-				//we have to loop the entire demo array to look for the respective index
-				//and change its color
-				const demo = store.demo.map((elm, i) => {
-					if (i === index) elm.background = color;
-					return elm;
-				});
-
-				//reset the global store
-				setStore({ demo: demo });
-			}
-		}
+		login: async (data) => {
+		  const res = await loginWhitEmailAndPassword(data);
+		  const { token, user } = res;
+		  if (token && user) {
+			sessionStorage.setItem("token", res.token);
+			sessionStorage.setItem("user", JSON.stringify(res.user));
+			setStore({ user: res.user, token: res.token });
+			return { ok: true };
+		  }
+		  return { ok: false, msg: res.msg };
+		},
+		logout: () => {
+		  sessionStorage.removeItem("token");
+		  sessionStorage.removeItem("user");
+		  setStore({ user: {}, token: null });
+		},
+		register: async (data) => {
+		  const res = await registerUser(data);
+		  if (res.user) {
+			sessionStorage.setItem("token", res.token);
+			sessionStorage.setItem("user", JSON.stringify(res.user));
+			setStore({ user: res.user, token: res.token });
+			return { ok: true };
+		  }
+		  return { ok: false, msg: res.msg };
+		},
+	  },
 	};
-};
-
-export default getState;
+  };
+  
+  export default getState;
+  
